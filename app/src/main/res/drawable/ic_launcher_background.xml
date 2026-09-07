@@ -6,15 +6,17 @@
   <group>
     <clip-path
         android:pathData="M0,0h432v432h-432z"/>
+    <!-- Fondo Dark OLED ultra profundo -->
     <path
         android:pathData="M0,0h432v432h-432z"
-        android:fillColor="#FAFAFA"/>
+        android:fillColor="#0D0E12"/>
+    <!-- Círculo sutil de gradiente/resplandor púrpura oscuro / nocturno -->
     <path
-        android:pathData="M322.13,215.5C322.13,272.66 274.64,319 216.07,319C157.49,319 110,272.66 110,215.5C110,158.34 157.49,112 216.07,112C274.64,112 322.13,158.34 322.13,215.5Z"
-        android:fillColor="#F2FAFF"/>
+        android:pathData="M216,216m-130,0a130,130 0 1,1 260,0a130,130 0 1,1 -260,0"
+        android:fillColor="#181926"/>
+    <!-- Aro exterior elegante -->
     <path
-        android:pathData="M216.07,299.59C263.66,299.59 302.24,261.94 302.24,215.5C302.24,169.06 263.66,131.41 216.07,131.41C168.47,131.41 129.89,169.06 129.89,215.5C129.89,261.94 168.47,299.59 216.07,299.59ZM216.07,319C274.64,319 322.13,272.66 322.13,215.5C322.13,158.34 274.64,112 216.07,112C157.49,112 110,158.34 110,215.5C110,272.66 157.49,319 216.07,319Z"
-        android:fillColor="#0058A0"
-        android:fillType="evenOdd"/>
+        android:pathData="M216,96C149.73,96 96,149.73 96,216C96,282.27 149.73,336 216,336C282.27,336 336,282.27 336,216C336,149.73 282.27,96 216,96ZM216,104C277.86,104 328,154.14 328,216C328,277.86 277.86,328 216,328C154.14,328 104,277.86 104,216C104,154.14 154.14,104 216,104Z"
+        android:fillColor="#24273A"/>
   </group>
 </vector>

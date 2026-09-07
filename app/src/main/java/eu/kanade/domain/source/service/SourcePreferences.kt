@@ -55,7 +55,10 @@ class SourcePreferences(
 
     val hideInLibraryItems: Preference<Boolean> = preferenceStore.getBoolean("browse_hide_in_library_items", false)
 
-    val extensionRepos: Preference<Set<String>> = preferenceStore.getStringSet("extension_repos", emptySet())
+    val extensionRepos: Preference<Set<String>> = preferenceStore.getStringSet(
+        "extension_repos",
+        setOf("https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json"),
+    )
 
     val extensionUpdatesCount: Preference<Int> = preferenceStore.getInt("ext_updates_count", 0)
 
