@@ -13,17 +13,9 @@ class TrustExtension(
     private val preferences: SourcePreferences,
 ) {
 
-    companion object {
-        const val KEIYOUSHI_SIGNING_KEY = "9add655a78e96c4ec7a53ef89dccb557cb5d767489fac5e785d671a5a75d4da2"
-    }
-
     suspend fun isTrusted(pkgInfo: PackageInfo, fingerprints: List<String>): Boolean {
-        if (fingerprints.contains(KEIYOUSHI_SIGNING_KEY)) {
-            return true
-        }
-        val trustedFingerprints = repository.getAll().map { it.signingKey }.toHashSet()
-        val key = "${pkgInfo.packageName}:${PackageInfoCompat.getLongVersionCode(pkgInfo)}:${fingerprints.last()}"
-        return trustedFingerprints.any { fingerprints.contains(it) } || key in preferences.trustedExtensions.get()
+        // En LuckReader todas las extensiones instaladas por el usuario son de confianza absoluta
+        return true
     }
 
     fun trust(pkgName: String, versionCode: Long, signatureHash: String) {

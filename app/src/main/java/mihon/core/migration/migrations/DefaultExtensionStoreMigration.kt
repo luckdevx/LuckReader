@@ -21,7 +21,13 @@ class DefaultExtensionStoreMigration(
         try {
             val stores = repository.getAll()
             if (stores.none { it.indexUrl.contains("keiyoushi") }) {
-                repository.insert("https://raw.githubusercontent.com/keiyoushi/extensions/repo/repo.json")
+                // Insertamos de inmediato en DB con metadatos oficiales de Keiyoushi
+                repository.insertFromPreference(
+                    indexUrl = "https://raw.githubusercontent.com/keiyoushi/extensions/repo/repo.json",
+                    name = "Keiyoushi",
+                )
+                // Y refrescamos
+                repository.refreshAll()
             }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Error inserting default Keiyoushi repo" }

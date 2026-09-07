@@ -18,6 +18,7 @@ import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.extension.model.InstallStep
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.system.LocaleHelper
+import mihon.domain.extension.interactor.UpdateExtensionStores
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -48,6 +49,7 @@ class ExtensionsViewModel(
     basePreferences: BasePreferences,
     private val extensionManager: ExtensionManager,
     private val getExtensions: GetExtensionsByType,
+    private val updateExtensionStores: UpdateExtensionStores,
     private val context: Context,
 ) : ViewModel() {
 
@@ -122,8 +124,10 @@ class ExtensionsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
     init {
-
-        viewModelScope.launchIO { findAvailableExtensions() }
+        viewModelScope.launchIO {
+            updateExtensionStores()
+            findAvailableExtensions()
+        }
     }
 
     fun searchQueryPredicate(query: String): (Extension) -> Boolean {
@@ -210,6 +214,7 @@ class ExtensionsViewModel(
         viewModelScope.launchIO {
             isRefreshing.update { true }
 
+            updateExtensionStores()
             extensionManager.findAvailableExtensions()
 
             // Fake slower refresh so it doesn't seem like it's not doing anything
