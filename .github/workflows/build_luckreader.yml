@@ -28,6 +28,25 @@ jobs:
           java-version-file: .github/.java-version
           distribution: temurin
 
+      - name: Generate Stable Signing Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore luckreader.keystore \
+            -alias luckreader \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "luckreader123" \
+            -keypass "luckreader123" \
+            -dname "CN=LuckReader, OU=LuckDev, O=Luck, L=City, ST=State, C=US"
+          
+          cat << 'EOF' > keystore.properties
+          storeFile=../luckreader.keystore
+          storePassword=luckreader123
+          keyAlias=luckreader
+          keyPassword=luckreader123
+          EOF
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
