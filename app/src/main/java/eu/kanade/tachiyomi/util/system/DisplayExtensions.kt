@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.view.View
+import android.view.WindowManager
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.TabletUiMode
 
@@ -78,3 +79,32 @@ fun Context.isNavigationBarNeedsScrim(): Boolean {
     return Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
         InternalResourceHelper.getBoolean(this, "config_navBarNeedsScrim", true)
 }
+
+/**
+ * Enables maximum supported refresh rate (e.g. 90Hz, 120Hz, 144Hz) for the activity window.
+ */
+fun Activity.enableHighRefreshRate() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+            val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                display
+            } else {
+                @Suppress("DEPRECATION")
+                windowManager.defaultDisplay
+            }
+            display?.supportedModes?.maxByOrNull { it.refreshRate }?.let { maxMode ->
+                if (maxMode.refreshRate > 60f) {
+                    val params = window.attributes
+                    params.preferredDisplayModeId = maxMode.modeId
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        params.preferredFrameRateCategory = WindowManager.LayoutParams.FRAME_RATE_CATEGORY_HIGH
+                    }
+                    window.attributes = params
+                }
+            }
+        } catch (_: Exception) {
+            // Ignore if display mode switching fails
+        }
+    }
+}
+

@@ -84,8 +84,9 @@ open class WebGpuViewer(
 
     private val scope = MainScope()
 
-    // Dedicated thread for decode worker to avoid blocking Dispatchers.Default pool
-    private val decodeExecutor = Executors.newSingleThreadExecutor { r ->
+    // Bounded thread pool for decode workers to accelerate decoding while avoiding thread exhaustion
+    private val decodeThreads = min(4, max(2, Runtime.getRuntime().availableProcessors() - 1))
+    private val decodeExecutor = Executors.newFixedThreadPool(decodeThreads) { r ->
         Thread(r, "WebGpuViewer-Decode").apply { isDaemon = true }
     }
     private val decodeDispatcher = decodeExecutor.asCoroutineDispatcher()
@@ -151,13 +152,14 @@ open class WebGpuViewer(
                 } else {
                     decodeQueue.addFirst(page)
                 }
-                lock.notify()
+                lock.notifyAll()
             }
 
             PageState.QUEUED -> {
                 // Already queued - move to front if prioritizing
                 if (prioritize && decodeQueue.remove(page)) {
                     decodeQueue.addLast(page)
+                    lock.notifyAll()
                 }
             }
 
@@ -168,51 +170,53 @@ open class WebGpuViewer(
     }
 
     init {
-        // Decode worker thread - processes pages from the queue
-        scope.launch(decodeDispatcher) {
-            try {
-                while (true) {
-                    val page = synchronized(lock) {
-                        while (decodeQueue.isEmpty()) {
-                            lock.wait()
+        // Decode worker pool - processes pages from the queue concurrently
+        repeat(decodeThreads) {
+            scope.launch(decodeDispatcher) {
+                try {
+                    while (true) {
+                        val page = synchronized(lock) {
+                            while (decodeQueue.isEmpty()) {
+                                lock.wait()
+                            }
+                            decodeQueue.removeLast().apply { state = PageState.DECODING }
                         }
-                        decodeQueue.removeLast().apply { state = PageState.DECODING }
-                    }
 
-                    // Verify page is still valid (not evicted and doesn't have a decoded image yet)
-                    val shouldProcess = synchronized(lock) {
-                        pageInCache(page) && page.state == PageState.DECODING && !page.isDecoded
-                    }
-
-                    if (!shouldProcess) {
-                        synchronized(lock) {
-                            if (pageInCache(page)) page.state = PageState.IDLE
+                        // Verify page is still valid (not evicted and doesn't have a decoded image yet)
+                        val shouldProcess = synchronized(lock) {
+                            pageInCache(page) && page.state == PageState.DECODING && !page.isDecoded
                         }
-                        continue
-                    }
 
-                    try {
-                        decodeReaderPage(page)
-                    } catch (e: Exception) {
-                        logcat(LogPriority.ERROR, e) { "decodeReaderPage: ${e.message}" }
-                        synchronized(lock) {
-                            if (pageInCache(page) && !page.isDecoded && !page.imagePage.destroyed) {
-                                val oldImagePage = page.imagePage
-                                val errorMessage = e.message ?: "Failed to decode image"
-                                page.imagePage = ErrorPage(errorMessage, page.spreadPosition)
-                                page.state = PageState.IDLE
-                                oldImagePage.cleanup()
-                                page.imagePage.invalidate()
-                            } else {
+                        if (!shouldProcess) {
+                            synchronized(lock) {
                                 if (pageInCache(page)) page.state = PageState.IDLE
+                            }
+                            continue
+                        }
+
+                        try {
+                            decodeReaderPage(page)
+                        } catch (e: Exception) {
+                            logcat(LogPriority.ERROR, e) { "decodeReaderPage: ${e.message}" }
+                            synchronized(lock) {
+                                if (pageInCache(page) && !page.isDecoded && !page.imagePage.destroyed) {
+                                    val oldImagePage = page.imagePage
+                                    val errorMessage = e.message ?: "Failed to decode image"
+                                    page.imagePage = ErrorPage(errorMessage, page.spreadPosition)
+                                    page.state = PageState.IDLE
+                                    oldImagePage.cleanup()
+                                    page.imagePage.invalidate()
+                                } else {
+                                    if (pageInCache(page)) page.state = PageState.IDLE
+                                }
                             }
                         }
                     }
+                } catch (_: InterruptedException) {
+                    // Normal shutdown
+                } catch (e: Exception) {
+                    logcat(LogPriority.ERROR, e) { "Decode worker died" }
                 }
-            } catch (_: InterruptedException) {
-                // Normal shutdown
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e) { "Decode worker died" }
             }
         }
     }
@@ -1052,7 +1056,8 @@ open class WebGpuViewer(
 
             // Buffered to read the spread tag, then decoded from the buffer. On the preference,
             // not isDualPageMode(): WIDE is portrait-off, and a rotate never re-decodes.
-            val bytes = if (config.dualPageView != ReaderPreferences.DualPageView.NEVER) {
+            // In continuous/webtoon mode, dual page spreads are never possible, so skip buffering.
+            val bytes = if (!isContinuous && config.dualPageView != ReaderPreferences.DualPageView.NEVER) {
                 input.readBytes()
             } else {
                 null

@@ -51,9 +51,35 @@ class GetExtensionsByType(
                             )
                         }
                 }
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+                .sortedWith(
+                    compareBy<Extension.Available> { ext ->
+                        val pkgLower = ext.pkgName.lowercase()
+                        val nameLower = ext.name.lowercase()
+                        val isElite = ELITE_SOURCES.any { keyword ->
+                            pkgLower.contains(keyword) || nameLower.contains(keyword)
+                        }
+                        if (isElite) 0 else 1
+                    }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
+                )
 
             Extensions(updates, installed, available, untrusted)
         }
+    }
+
+    companion object {
+        private val ELITE_SOURCES = listOf(
+            "comick",
+            "weebcentral",
+            "mangadex",
+            "flamecomics",
+            "asurascans",
+            "olympusscanlation",
+            "mangafire",
+            "mangamx",
+            "zonatmoto",
+            "ikigaimangas",
+            "plottwistnofansub",
+            "mangaplus",
+        )
     }
 }

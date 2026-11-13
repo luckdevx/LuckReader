@@ -13,6 +13,8 @@ import eu.kanade.tachiyomi.ui.reader.viewer.webgpu.WebGpuViewerContinuous
 import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonViewer
 import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
+import logcat.LogPriority
+import tachiyomi.core.common.util.system.logcat
 
 enum class ReadingMode(
     val stringRes: StringResource,
@@ -71,13 +73,17 @@ enum class ReadingMode(
 
         fun toViewer(preference: Int?, activity: ReaderActivity): Viewer {
             if (activity.appGraph.basePreferences.highQualityRenderer.get()) {
-                return when (fromPreference(preference)) {
-                    LEFT_TO_RIGHT -> WebGpuViewer(activity, isReversed = false, isVertical = false)
-                    RIGHT_TO_LEFT -> WebGpuViewer(activity, isReversed = true, isVertical = false)
-                    VERTICAL -> WebGpuViewer(activity, isReversed = false, isVertical = true)
-                    WEBTOON -> WebGpuViewerContinuous(activity)
-                    CONTINUOUS_VERTICAL -> WebGpuViewerContinuous(activity)
-                    DEFAULT -> throw IllegalStateException("Preference value must be resolved: $preference")
+                try {
+                    return when (fromPreference(preference)) {
+                        LEFT_TO_RIGHT -> WebGpuViewer(activity, isReversed = false, isVertical = false)
+                        RIGHT_TO_LEFT -> WebGpuViewer(activity, isReversed = true, isVertical = false)
+                        VERTICAL -> WebGpuViewer(activity, isReversed = false, isVertical = true)
+                        WEBTOON -> WebGpuViewerContinuous(activity)
+                        CONTINUOUS_VERTICAL -> WebGpuViewerContinuous(activity)
+                        DEFAULT -> throw IllegalStateException("Preference value must be resolved: $preference")
+                    }
+                } catch (t: Throwable) {
+                    logcat(LogPriority.ERROR, t) { "Failed to initialize WebGPU viewer, falling back to classic viewer" }
                 }
             }
             return when (fromPreference(preference)) {
