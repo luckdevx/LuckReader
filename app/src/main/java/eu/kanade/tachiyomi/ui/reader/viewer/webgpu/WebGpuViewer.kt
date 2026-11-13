@@ -60,6 +60,7 @@ import tachiyomi.core.common.util.system.logcat
 import java.util.TreeSet
 import java.util.concurrent.Executors
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration.Companion.milliseconds
 

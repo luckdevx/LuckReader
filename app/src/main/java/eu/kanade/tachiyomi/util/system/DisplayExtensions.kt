@@ -96,9 +96,6 @@ fun Activity.enableHighRefreshRate() {
                 if (maxMode.refreshRate > 60f) {
                     val params = window.attributes
                     params.preferredDisplayModeId = maxMode.modeId
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        params.preferredFrameRateCategory = WindowManager.LayoutParams.FRAME_RATE_CATEGORY_HIGH
-                    }
                     window.attributes = params
                 }
             }
